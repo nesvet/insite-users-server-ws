@@ -4,7 +4,9 @@ import type { IncomingTransfer, IncomingTransport } from "insite-ws-transfers/no
 import {
 	_ids,
 	Err,
+	includesAll,
 	isEmpty,
+	removeAll,
 	StringKey,
 	union,
 	without
@@ -168,7 +170,7 @@ export class UsersServer<AS extends AbilitiesSchema> {
 				if (!roles.length)
 					throw new Err("Roles shouldn't be empty", "emptyroles");
 				
-				if (!wssc.user.slaveRoleIds.includesAll(roles))
+				if (!includesAll(wssc.user.slaveRoleIds, roles))
 					throw new Err("Can't assign role the user is not involved in", "forbiddenrole");
 				
 				if (org && !wssc.user.slaveIds.includes(org))
@@ -198,7 +200,7 @@ export class UsersServer<AS extends AbilitiesSchema> {
 					if (!updates.roles.length)
 						throw new Err("Roles can't be empty", "emptyroles");
 					
-					if (!wssc.user.slaveRoleIds.includesAll(updates.roles))
+					if (!includesAll(wssc.user.slaveRoleIds, updates.roles))
 						throw new Err("Can't assign role the user is not involved in", "forbiddenrole");
 					
 					const user = this.users.get(_id);
@@ -323,7 +325,7 @@ export class UsersServer<AS extends AbilitiesSchema> {
 					throw new Err("Title can't be empty", "emptytitle");
 				
 				if (updates.owners) {
-					if (!wssc.user.slaveIds.includesAll(updates.owners))
+					if (!includesAll(wssc.user.slaveIds, updates.owners))
 						throw new Err("Can't assign owners the user is not master of", "forbiddenowners");
 					
 					const org = this.users.orgs.get(_id);
@@ -373,14 +375,14 @@ export class UsersServer<AS extends AbilitiesSchema> {
 		this.wss.onRequest("users.roles.update", async (wssc: WithUser<InSiteWebSocketServerClient, AS>, _id: string, { abilities, ...updates }: Omit<RoleDoc, "createdAt">) => {
 			if (wssc.user?.abilities.inSite?.sections?.includes("users") && wssc.user.slaveRoleIds.includes(_id)) {
 				if (updates.involves)
-					if (wssc.user.slaveRoleIds.includesAll(updates.involves)) {
-						updates.involves.remove(_id);
+					if (includesAll(wssc.user.slaveRoleIds, updates.involves)) {
+						removeAll(updates.involves, [ _id ]);
 						
 						const role = this.users.roles.get(_id);
 						if (role)
 							for (const involvedRoleId of updates.involves)
 								if (this.users.roles.get(involvedRoleId)?.involves.has(role))
-									updates.involves.remove(involvedRoleId);
+									removeAll(updates.involves, [ involvedRoleId ]);
 						
 						updates.involves = this.users.roles.cleanUpIds(updates.involves);
 					} else
@@ -410,7 +412,7 @@ export class UsersServer<AS extends AbilitiesSchema> {
 									abilityWithParams[paramId] = value as number;
 									shouldUpdate = true;
 								}
-							} else if (param.type === "items" && (userAbilityWithParams[paramId] as AbilityParamItems)?.includesAll(value as string[])) {
+							} else if (param.type === "items" && userAbilityWithParams[paramId] && includesAll(userAbilityWithParams[paramId] as AbilityParamItems, value as string[])) {
 								abilityWithParams[paramId] = value as string[];
 								shouldUpdate = true;
 							}

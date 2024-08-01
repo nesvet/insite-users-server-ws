@@ -4,7 +4,12 @@ import {
 	Publication,
 	SubscriptionHandle
 } from "insite-subscriptions-server/ws";
-import { _ids, intersection, pick } from "@nesvet/n";
+import {
+	_ids,
+	includesAny,
+	intersection,
+	pick
+} from "@nesvet/n";
 import { ChangeStreamDocument, Sort } from "insite-db";
 import type {
 	AbilitiesMap,
@@ -122,7 +127,7 @@ export class UserPublication<AS extends AbilitiesSchema> extends Publication<AS>
 						if ("documentKey" in next && next.documentKey._id === _id)
 							switch (next.operationType) {
 								case "update":
-									if (!Object.keys(next.updateDescription.updatedFields!).includesAny(fieldsToUpdate))
+									if (!includesAny(Object.keys(next.updateDescription.updatedFields!), fieldsToUpdate))
 										break;
 								
 								case "replace":// eslint-disable-line no-fallthrough
