@@ -33,8 +33,9 @@
     "@nesvet/conveyer": "^2.2.1",
     "@nesvet/eslint-config": "^2.0.24",
     "@types/node": "^20.14.13",
-    "insite-ws": "^2.0.8",
-    "insite-ws-transfers": "^2.0.2",
+    "@types/ws": "^8.5.12",
+    "insite-ws": "^2.0.9",
+    "insite-ws-transfers": "^2.0.3",
     "typescript": "^5.5.4"
   }
 }
