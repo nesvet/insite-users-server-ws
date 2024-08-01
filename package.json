@@ -1,0 +1,41 @@
+{
+  "name": "insite-users-server-ws",
+  "version": "2.0.0",
+  "description": "inSite users server side WebSocket API",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "packageManager": "bun@1.1.21",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "bun .conveyer.js",
+    "postbuild": "tsc -p ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nesvet/insite-users-server-ws.git"
+  },
+  "keywords": [
+    "insite",
+    "users",
+    "server",
+    "ws"
+  ],
+  "author": "Eugene Nesvetaev <dev@nesvet.dev> (https://nesvet.dev/)",
+  "license": "MIT",
+  "dependencies": {
+    "@nesvet/deprecated-extensions": "^1.1.1",
+    "@nesvet/n": "^1.0.72",
+    "insite-db": "^1.2.13",
+    "insite-users-server": "^1.1.2",
+    "insite-subscriptions-server": "^1.0.240"
+  },
+  "devDependencies": {
+    "@nesvet/conveyer": "^2.2.1",
+    "@nesvet/eslint-config": "^2.0.24",
+    "@types/node": "^20.14.12",
+    "insite-ws": "^2.0.6",
+    "insite-ws-transfers": "^2.0.1",
+    "typescript": "^5.5.4"
+  }
+}
