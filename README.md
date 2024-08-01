@@ -1,13 +1,13 @@
-# inSite users server side
+# inSite users server side WebSocket API
 
 ## Installation
 
 ```sh
-$ npm install insite-users-server
+$ npm install insite-users-server-ws
 ```
 
 Or
 
 ```sh
-$ bun add insite-users-server
+$ bun add insite-users-server-ws
 ```
