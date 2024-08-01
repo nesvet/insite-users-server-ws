@@ -25,17 +25,17 @@
   "license": "MIT",
   "dependencies": {
     "@nesvet/deprecated-extensions": "^1.1.1",
-    "@nesvet/n": "^1.0.72",
-    "insite-db": "^1.2.13",
-    "insite-users-server": "^1.1.2",
-    "insite-subscriptions-server": "^1.0.240"
+    "@nesvet/n": "^1.1.0",
+    "insite-db": "^2.0.0",
+    "insite-users-server": "^2.0.0",
+    "insite-subscriptions-server": "^2.0.1"
   },
   "devDependencies": {
     "@nesvet/conveyer": "^2.2.1",
     "@nesvet/eslint-config": "^2.0.24",
-    "@types/node": "^20.14.12",
-    "insite-ws": "^2.0.6",
-    "insite-ws-transfers": "^2.0.1",
+    "@types/node": "^20.14.13",
+    "insite-ws": "^2.0.8",
+    "insite-ws-transfers": "^2.0.2",
     "typescript": "^5.5.4"
   }
 }
