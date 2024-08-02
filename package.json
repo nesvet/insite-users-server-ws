@@ -26,8 +26,8 @@
   "dependencies": {
     "@nesvet/n": "^1.1.1",
     "insite-db": "^2.0.0",
-    "insite-users-server": "^2.0.1",
-    "insite-subscriptions-server": "^2.0.1"
+    "insite-users-server": "^2.0.2",
+    "insite-subscriptions-server": "^2.0.2"
   },
   "devDependencies": {
     "@nesvet/conveyer": "^2.2.1",
@@ -35,7 +35,7 @@
     "@types/node": "^20.14.13",
     "@types/ws": "^8.5.12",
     "insite-ws": "^2.0.11",
-    "insite-ws-transfers": "^2.0.4",
+    "insite-ws-transfers": "^2.0.5",
     "typescript": "^5.5.4"
   }
 }
