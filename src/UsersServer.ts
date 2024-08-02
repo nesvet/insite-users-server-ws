@@ -72,12 +72,12 @@ export type Options<AS extends AbilitiesSchema> = {
 
 export class UsersServer<AS extends AbilitiesSchema> {
 	constructor(options: Options<AS>) {
-		this.#initPromise = this.init!(options);
+		this.initPromise = this.init!(options);
 		
 	}
 	
-	#userWsMap = new WeakMap<User<AS>, Set<WithUser<InSiteWebSocketServerClient, AS>>>();
-	#sessionsWsMap = new WeakMap<Session<AS>, WithUser<InSiteWebSocketServerClient, AS>>();
+	private userWsMap = new WeakMap<User<AS>, Set<WithUser<InSiteWebSocketServerClient, AS>>>();
+	private sessionsWsMap = new WeakMap<Session<AS>, WithUser<InSiteWebSocketServerClient, AS>>();
 	
 	wss!: Options<AS>["wss"];
 	users!: Users<AS>;
@@ -123,7 +123,7 @@ export class UsersServer<AS extends AbilitiesSchema> {
 		this.incomingTransport = incomingTransport;
 		
 		for (const user of this.users.values())
-			this.#handleUserCreate(user);
+			this.handleUserCreate(user);
 		
 		this.abilitiesPublication = new AbilitiesPublication<AS>(this.users.abilitiesMap);
 		this.rolesPublication = new RolesPublication<AS>(this.users.roles, rolesPublicationOptions);
@@ -134,18 +134,18 @@ export class UsersServer<AS extends AbilitiesSchema> {
 		this.orgsExtendedPublication = new OrgsExtendedPublication<AS>(this.users.orgs, orgsExtendedPublicationOptions);
 		this.sessionsPublication = new SessionsPublication<AS>(this.users.sessions);
 		
-		this.users.on("roles-update", this.#handleRolesUpdate);
-		this.users.on("roles-role-update", this.#handleRolesRoleUpdate);
-		this.users.on("user-create", this.#handleUserCreate);
-		this.users.on("user-is-online", this.#handleUserIsOnline);
-		this.users.on("session-delete", this.#handleSessionDelete);
-		this.users.on("orgs-update", this.#handleOrgsUpdate);
-		this.users.on("orgs-org-update", this.#handleOrgsOrgUpdate);
-		this.users.on("user-permissions-change", this.#handleUserPermissionsChange);
+		this.users.on("roles-update", this.handleRolesUpdate);
+		this.users.on("roles-role-update", this.handleRolesRoleUpdate);
+		this.users.on("user-create", this.handleUserCreate);
+		this.users.on("user-is-online", this.handleUserIsOnline);
+		this.users.on("session-delete", this.handleSessionDelete);
+		this.users.on("orgs-update", this.handleOrgsUpdate);
+		this.users.on("orgs-org-update", this.handleOrgsOrgUpdate);
+		this.users.on("user-permissions-change", this.handleUserPermissionsChange);
 		
-		this.wss.onRequest("login", this.#handleClientRequestLogin);
-		this.wss.onRequest("logout", this.#handleClientRequestLogout);
-		this.wss.on("client-closed", this.#handleClientClosed);
+		this.wss.onRequest("login", this.handleClientRequestLogin);
+		this.wss.onRequest("logout", this.handleClientRequestLogout);
+		this.wss.on("client-closed", this.handleClientClosed);
 		
 		
 		/*
@@ -451,10 +451,10 @@ export class UsersServer<AS extends AbilitiesSchema> {
 		return this;
 	};
 	
-	#initPromise;
+	private initPromise;
 	
 	whenReady() {
-		return this.#initPromise;
+		return this.initPromise;
 	}
 	
 	getDefaultSessionProps({ userAgent, remoteAddress }: WithUser<InSiteWebSocketServerClient, AS>) {
@@ -472,14 +472,14 @@ export class UsersServer<AS extends AbilitiesSchema> {
 		
 		if (wssc.session !== session) {
 			if (wssc.session)
-				this.#sessionsWsMap.delete(wssc.session);
+				this.sessionsWsMap.delete(wssc.session);
 			
 			if (session) {
 				wssc.session = session;
 				wssc.user = session.user;
 				wssc.lastUserId = session.user._id;
-				this.#userWsMap.get(session.user)?.add(wssc);
-				this.#sessionsWsMap.set(session, wssc);
+				this.userWsMap.get(session.user)?.add(wssc);
+				this.sessionsWsMap.set(session, wssc);
 				
 				if (shouldProlong)
 					session.prolong({
@@ -490,7 +490,7 @@ export class UsersServer<AS extends AbilitiesSchema> {
 				
 			} else {
 				delete wssc.session;
-				this.#userWsMap.get(wssc.user!)?.delete(wssc);
+				this.userWsMap.get(wssc.user!)?.delete(wssc);
 			}
 			
 			this.wss.emit("client-session", wssc, shouldProlong);
@@ -498,7 +498,7 @@ export class UsersServer<AS extends AbilitiesSchema> {
 		
 	}
 	
-	#login = async (wssc: WithUser<InSiteWebSocketServerClient, AS>, email: string, password: string) => {
+	private login = async (wssc: WithUser<InSiteWebSocketServerClient, AS>, email: string, password: string) => {
 		const session = await this.users.login(email, password, {
 			...this.getDefaultSessionProps(wssc),
 			...this.getSessionProps?.(wssc),
@@ -510,7 +510,7 @@ export class UsersServer<AS extends AbilitiesSchema> {
 		
 	};
 	
-	#logout = (wssc: WithUser<InSiteWebSocketServerClient, AS>) => {
+	private logout = (wssc: WithUser<InSiteWebSocketServerClient, AS>) => {
 		if (wssc.session) {
 			this.users.logout(wssc.session);
 			this.setSession(wssc, null);
@@ -518,16 +518,16 @@ export class UsersServer<AS extends AbilitiesSchema> {
 		
 	};
 	
-	#handleRolesUpdate = () =>
+	private handleRolesUpdate = () =>
 		this.rolesPublication.flushInitial();
 	
-	#handleRolesRoleUpdate = (role: Role, next: ChangeStreamDocument<RoleDoc>) =>
+	private handleRolesRoleUpdate = (role: Role, next: ChangeStreamDocument<RoleDoc>) =>
 		next && this.rolesPublication.skip(next);
 	
-	#handleUserCreate = (user: User) =>
-		this.#userWsMap.set(user, new Set<WithUser<InSiteWebSocketServerClient, AS>>());
+	private handleUserCreate = (user: User) =>
+		this.userWsMap.set(user, new Set<WithUser<InSiteWebSocketServerClient, AS>>());
 	
-	#handleUserIsOnline = ({ _id, isOnline }: User) => {
+	private handleUserIsOnline = ({ _id, isOnline }: User) => {
 		const updates = { _id, isOnline };
 		
 		for (const usersSubscription of this.usersPublication.subscriptions) {
@@ -538,22 +538,22 @@ export class UsersServer<AS extends AbilitiesSchema> {
 		
 	};
 	
-	#handleSessionDelete = (session: Session) => {
-		const wssc = this.#sessionsWsMap.get(session);
+	private handleSessionDelete = (session: Session) => {
+		const wssc = this.sessionsWsMap.get(session);
 		
 		if (wssc)
 			this.setSession(wssc, null);
 		
 	};
 	
-	#handleOrgsUpdate = () => {
+	private handleOrgsUpdate = () => {
 		
 		this.orgsPublication.flushInitial();
 		this.orgsExtendedPublication.flushInitial();
 		
 	};
 	
-	#handleOrgsOrgUpdate = (org: Org, next: ChangeStreamDocument<OrgDoc>) => {
+	private handleOrgsOrgUpdate = (org: Org, next: ChangeStreamDocument<OrgDoc>) => {
 		if (next) {
 			this.orgsPublication.skip(next);
 			this.orgsExtendedPublication.skip(next);
@@ -561,21 +561,21 @@ export class UsersServer<AS extends AbilitiesSchema> {
 		
 	};
 	
-	#handleUserPermissionsChange = (user: User) => {
-		const webSockets = this.#userWsMap.get(user);
+	private handleUserPermissionsChange = (user: User) => {
+		const webSockets = this.userWsMap.get(user);
 		
 		if (webSockets)
 			this.wss.emit("should-renew-subscriptions", [ ...webSockets ]);
 		
 	};
 	
-	#handleClientRequestLogin = (wssc: WithUser<InSiteWebSocketServerClient, AS>, email: string, password: string) =>
-		this.#login(wssc, email, password);
+	private handleClientRequestLogin = (wssc: WithUser<InSiteWebSocketServerClient, AS>, email: string, password: string) =>
+		this.login(wssc, email, password);
 	
-	#handleClientRequestLogout = (wssc: WithUser<InSiteWebSocketServerClient, AS>) =>
-		this.#logout(wssc);
+	private handleClientRequestLogout = (wssc: WithUser<InSiteWebSocketServerClient, AS>) =>
+		this.logout(wssc);
 	
-	#handleClientClosed = (wssc: WithUser<InSiteWebSocketServerClient, AS>) => {
+	private handleClientClosed = (wssc: WithUser<InSiteWebSocketServerClient, AS>) => {
 		wssc.session?.offline();
 		this.setSession(wssc, null);
 		
