@@ -27,7 +27,7 @@
     "@nesvet/n": "^1.1.1",
     "insite-db": "^2.0.1",
     "insite-users-server": "^2.0.3",
-    "insite-subscriptions-server": "^2.0.3"
+    "insite-subscriptions-server": "^2.0.4"
   },
   "devDependencies": {
     "@nesvet/conveyer": "^2.2.1",
@@ -35,7 +35,7 @@
     "@types/node": "^22.1.0",
     "@types/ws": "^8.5.12",
     "insite-ws": "^2.0.12",
-    "insite-ws-transfers": "^2.0.6",
+    "insite-ws-transfers": "^2.0.7",
     "typescript": "^5.5.4"
   }
 }
