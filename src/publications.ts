@@ -47,7 +47,7 @@ export type RolesPublicationOptions = {
 	transform?: (roleDoc: object) => void;
 };
 
-export class RolesPublication<AS extends AbilitiesSchema> extends CollectionMapPublication<RoleDoc, AS> {
+export class RolesPublication<AS extends AbilitiesSchema> extends CollectionMapPublication<AS, RoleDoc> {
 	constructor(roles: Roles<AS>, options: RolesPublicationOptions = {}) {
 		
 		const {
@@ -58,7 +58,7 @@ export class RolesPublication<AS extends AbilitiesSchema> extends CollectionMapP
 		
 		Object.assign(projection, { involves: 1, abilities: 1 });
 		
-		super("roles", roles.collection, wssc => wssc.user?.abilities.inSite?.sections?.includes("users") && {
+		super(roles.collection, "roles", wssc => wssc.user?.abilities.inSite?.sections?.includes("users") && {
 			query: { _id: { $in: wssc.user.slaveRoleIds } },
 			projection,
 			sort
@@ -199,7 +199,7 @@ export type UsersPublicationOptions = {
 	transform?: (userDoc: object) => void;
 };
 
-export class UsersPublication<AS extends AbilitiesSchema> extends CollectionMapPublication<UserDoc, AS> {
+export class UsersPublication<AS extends AbilitiesSchema> extends CollectionMapPublication<AS, UserDoc> {
 	constructor(users: Users<AS>, options: UsersPublicationOptions = {}) {
 		
 		const {
@@ -208,7 +208,7 @@ export class UsersPublication<AS extends AbilitiesSchema> extends CollectionMapP
 			transform
 		} = options;
 		
-		super("users", users.collection, wssc => wssc.user?.abilities.login && {
+		super(users.collection, "users", wssc => wssc.user?.abilities.login && {
 			query: {},
 			projection,
 			sort
@@ -245,7 +245,7 @@ export type UsersExtendedPublicationOptions = {
 	transform?: (userDoc: object) => void;
 };
 
-export class UsersExtendedPublication<AS extends AbilitiesSchema> extends CollectionMapPublication<UserDoc, AS> {
+export class UsersExtendedPublication<AS extends AbilitiesSchema> extends CollectionMapPublication<AS, UserDoc> {
 	constructor(users: Users<AS>, options: UsersExtendedPublicationOptions = {}) {
 		
 		const {
@@ -258,7 +258,7 @@ export class UsersExtendedPublication<AS extends AbilitiesSchema> extends Collec
 		if (!triggers.includes("roles"))
 			triggers.push("roles");
 		
-		super("users.extended", users.collection, wssc => wssc.user?.abilities.inSite?.sections?.includes("users") && {
+		super(users.collection, "users.extended", wssc => wssc.user?.abilities.inSite?.sections?.includes("users") && {
 			query: { _id: { $in: wssc.user.slaveIds } },
 			projection,
 			sort,
@@ -278,9 +278,9 @@ export class UsersExtendedPublication<AS extends AbilitiesSchema> extends Collec
 }
 
 
-export class SessionsPublication<AS extends AbilitiesSchema> extends CollectionMapPublication<SessionDoc, AS, [ userId: string ]> {
+export class SessionsPublication<AS extends AbilitiesSchema> extends CollectionMapPublication<AS, SessionDoc, [ userId: string ]> {
 	constructor(sessions: Sessions<AS>) {
-		super("users.people.sessions", sessions.collection, (wssc, userId) =>
+		super(sessions.collection, "users.people.sessions", (wssc, userId) =>
 			wssc.user?.abilities.inSite?.sections?.includes("users") && wssc.user.permissiveIds.includes(userId) && {
 				query: { user: userId },
 				projection: { remoteAddress: 1, isOnline: 1, prolongedAt: 1 },
@@ -297,7 +297,7 @@ export type OrgsPublicationOptions = {
 	transform?: (orgDoc: object) => void;
 };
 
-export class OrgsPublication<AS extends AbilitiesSchema> extends CollectionMapPublication<OrgDoc, AS> {
+export class OrgsPublication<AS extends AbilitiesSchema> extends CollectionMapPublication<AS, OrgDoc> {
 	constructor(orgs: Orgs, options: OrgsPublicationOptions = {}) {
 		
 		const {
@@ -306,7 +306,7 @@ export class OrgsPublication<AS extends AbilitiesSchema> extends CollectionMapPu
 			transform
 		} = options;
 		
-		super("orgs", orgs.collection, wssc => wssc.user?.abilities.login && {
+		super(orgs.collection, "orgs", wssc => wssc.user?.abilities.login && {
 			query: {},
 			projection,
 			sort
@@ -331,7 +331,7 @@ export type OrgsExtendedPublicationOptions = {
 	transform?: (orgDoc: object) => void;
 };
 
-export class OrgsExtendedPublication<AS extends AbilitiesSchema> extends CollectionMapPublication<OrgDoc, AS> {
+export class OrgsExtendedPublication<AS extends AbilitiesSchema> extends CollectionMapPublication<AS, OrgDoc> {
 	constructor(orgs: Orgs<AS>, options: OrgsExtendedPublicationOptions = {}) {
 		
 		const {
@@ -344,7 +344,7 @@ export class OrgsExtendedPublication<AS extends AbilitiesSchema> extends Collect
 		if (!triggers.includes("owners"))
 			triggers.push("owners");
 		
-		super("orgs.extended", orgs.collection, wssc => wssc.user?.abilities.inSite?.sections?.includes("users") && {
+		super(orgs.collection, "orgs.extended", wssc => wssc.user?.abilities.inSite?.sections?.includes("users") && {
 			query: { _id: { $in: wssc.user.slaveIds } },
 			projection,
 			sort,

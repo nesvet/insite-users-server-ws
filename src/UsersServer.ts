@@ -1,5 +1,4 @@
-import type { WithUser } from "insite-subscriptions-server/ws";
-import type { InSiteWebSocketServer, InSiteWebSocketServerClient } from "insite-ws/server";
+import type { InSiteWebSocketServer } from "insite-ws/server";
 import type { IncomingTransfer, IncomingTransport } from "insite-ws-transfers/node";
 import {
 	_ids,
@@ -47,12 +46,13 @@ import {
 	type UsersPublicationOptions
 } from "./publications";
 import { regexps } from "./regexps";
+import { WSSCWithUser } from "./WSSCWithUser";
 
 const avatarTypesAccepted = [ "image/webp" ];
 const maxAvatarSize = 1024 * 512;
 
 export type Options<AS extends AbilitiesSchema> = {
-	wss: InSiteWebSocketServer;
+	wss: InSiteWebSocketServer<WSSCWithUser<AS>>;
 	collections: InSiteCollections;
 	users: UsersOptions<AS>;
 	publication?: UsersPublicationOptions;
@@ -65,7 +65,7 @@ export type Options<AS extends AbilitiesSchema> = {
 		publication?: OrgsPublicationOptions;
 		extendedPublication?: OrgsExtendedPublicationOptions;
 	};
-	getSessionProps?: (wssc: WithUser<InSiteWebSocketServerClient, AS>) => Partial<SessionDoc>;
+	getSessionProps?: (wssc: WSSCWithUser<AS>) => Partial<SessionDoc>;
 	incomingTransport?: IncomingTransport;
 };
 
@@ -76,8 +76,8 @@ export class UsersServer<AS extends AbilitiesSchema> {
 		
 	}
 	
-	private userWsMap = new WeakMap<User<AS>, Set<WithUser<InSiteWebSocketServerClient, AS>>>();
-	private sessionsWsMap = new WeakMap<Session<AS>, WithUser<InSiteWebSocketServerClient, AS>>();
+	private userWsMap = new WeakMap<User<AS>, Set<WSSCWithUser<AS>>>();
+	private sessionsWsMap = new WeakMap<Session<AS>, WSSCWithUser<AS>>();
 	
 	wss!: Options<AS>["wss"];
 	users!: Users<AS>;
@@ -154,7 +154,7 @@ export class UsersServer<AS extends AbilitiesSchema> {
 		
 		/* Users */
 		
-		this.wss.onRequest("users.people.check-email", (wssc: WithUser<InSiteWebSocketServerClient, AS>, email: string) => {
+		this.wss.onRequest("users.people.check-email", (wssc: WSSCWithUser<AS>, email: string) => {
 			if (wssc.user?.abilities.inSite?.sections?.includes("users")) {
 				if (!regexps.email.test(email))
 					throw new Err("Not email", "notemail");
@@ -165,7 +165,7 @@ export class UsersServer<AS extends AbilitiesSchema> {
 			
 		});
 		
-		this.wss.onRequest("users.people.add", async (wssc: WithUser<InSiteWebSocketServerClient, AS>, { roles, org, ...rest }: Omit<UserDoc, "_id" | "createdAt">) => {
+		this.wss.onRequest("users.people.add", async (wssc: WSSCWithUser<AS>, { roles, org, ...rest }: Omit<UserDoc, "_id" | "createdAt">) => {
 			if (wssc.user?.abilities.inSite?.sections?.includes("users")) {
 				if (!roles.length)
 					throw new Err("Roles shouldn't be empty", "emptyroles");
@@ -181,7 +181,7 @@ export class UsersServer<AS extends AbilitiesSchema> {
 			
 		});
 		
-		this.wss.onRequest("users.people.change-password", async (wssc: WithUser<InSiteWebSocketServerClient, AS>, _id: string, newPassword: string) => {
+		this.wss.onRequest("users.people.change-password", async (wssc: WSSCWithUser<AS>, _id: string, newPassword: string) => {
 			if (wssc.user?.abilities.inSite?.sections?.includes("users") && wssc.user.permissiveIds.includes(_id)) {
 				if (typeof newPassword != "string")
 					throw new Err("Type of password is incorrect", "wrongpasswordtype");
@@ -194,7 +194,7 @@ export class UsersServer<AS extends AbilitiesSchema> {
 			
 		});
 		
-		this.wss.onRequest("users.people.update", async (wssc: WithUser<InSiteWebSocketServerClient, AS>, _id: string, updates: Omit<UserDoc, "_id" | "createdAt">) => {
+		this.wss.onRequest("users.people.update", async (wssc: WSSCWithUser<AS>, _id: string, updates: Omit<UserDoc, "_id" | "createdAt">) => {
 			if (wssc.user?.abilities.inSite?.sections?.includes("users") && wssc.user.permissiveIds.includes(_id)) {
 				if (updates.roles) {
 					if (!updates.roles.length)
@@ -223,7 +223,7 @@ export class UsersServer<AS extends AbilitiesSchema> {
 			
 		});
 		
-		this.wss.onRequest("users.people.delete", async (wssc: WithUser<InSiteWebSocketServerClient, AS>, _id: string) => {
+		this.wss.onRequest("users.people.delete", async (wssc: WSSCWithUser<AS>, _id: string) => {
 			if (wssc.user?.abilities.inSite?.sections?.includes("users") && wssc.user.slaveIds.includes(_id))
 				await this.users.collection.deleteOne({ _id });
 			
@@ -232,7 +232,7 @@ export class UsersServer<AS extends AbilitiesSchema> {
 		
 		/* Sessions */
 		
-		this.wss.onRequest("users.people.destroy-session", async (wssc: WithUser<InSiteWebSocketServerClient, AS>, sessionId: string) => {
+		this.wss.onRequest("users.people.destroy-session", async (wssc: WSSCWithUser<AS>, sessionId: string) => {
 			if (
 				wssc.user?.abilities.inSite?.sections?.includes("users") &&
 				wssc.user.permissiveIds.includes(this.users.bySessionId.get(sessionId)?._id)
@@ -245,15 +245,15 @@ export class UsersServer<AS extends AbilitiesSchema> {
 		/* Avatars */
 		
 		if (this.incomingTransport) {
-			const getAvatarTransferProps = (check?: (wssc: WithUser<InSiteWebSocketServerClient, AS>, transfer: IncomingTransfer) => boolean | Promise<boolean | undefined> | undefined) => ({
+			const getAvatarTransferProps = (check?: (wssc: WSSCWithUser<AS>, transfer: IncomingTransfer) => boolean | Promise<boolean | undefined> | undefined) => ({
 				
-				begin: async (wssc: InSiteWebSocketServerClient, transfer: IncomingTransfer) => (
+				begin: async (wssc: WSSCWithUser<AS>, transfer: IncomingTransfer) => (
 					(!check || await check(wssc, transfer)) &&
 					avatarTypesAccepted.includes(transfer.metadata.type as string) &&
 					transfer.size <= maxAvatarSize
 				),
 				
-				end: async (wssc: InSiteWebSocketServerClient, { data, metadata: { type, _id } }: IncomingTransfer) => {
+				end: async (wssc: WSSCWithUser<AS>, { data, metadata: { type, _id } }: IncomingTransfer) => {
 					const binaryData = Binary.createFromBase64((data as string).slice((data as string).indexOf(",")));
 					
 					const ts = Date.now().toString(36);
@@ -273,13 +273,13 @@ export class UsersServer<AS extends AbilitiesSchema> {
 			});
 			
 			this.incomingTransport.on("users.people.avatar", getAvatarTransferProps(
-				(wssc: WithUser<InSiteWebSocketServerClient, AS>, { metadata: { _id } }: IncomingTransfer) =>
+				(wssc: WSSCWithUser<AS>, { metadata: { _id } }: IncomingTransfer) =>
 					wssc.user?.abilities.inSite?.sections?.includes("users") &&
 					wssc.user.permissiveIds.includes(_id as string)
 			));
 			
 			this.incomingTransport.on("user.avatar", getAvatarTransferProps(
-				(wssc: WithUser<InSiteWebSocketServerClient, AS>, transfer: IncomingTransfer) =>
+				(wssc: WSSCWithUser<AS>, transfer: IncomingTransfer) =>
 					wssc.user &&
 					wssc.user._id === transfer.metadata._id
 			));
@@ -294,13 +294,13 @@ export class UsersServer<AS extends AbilitiesSchema> {
 			
 		};
 		
-		this.wss.onRequest("users.people.delete-avatar", async (wssc: WithUser<InSiteWebSocketServerClient, AS>, _id: string) =>
+		this.wss.onRequest("users.people.delete-avatar", async (wssc: WSSCWithUser<AS>, _id: string) =>
 			wssc.user?.abilities.inSite?.sections?.includes("users") &&
 			wssc.user.permissiveIds.includes(_id) &&
 			await deleteAvatar(_id)
 		);
 		
-		this.wss.onRequest("user.delete-avatar", async (wssc: WithUser<InSiteWebSocketServerClient, AS>, _id: string) =>
+		this.wss.onRequest("user.delete-avatar", async (wssc: WSSCWithUser<AS>, _id: string) =>
 			wssc.user &&
 			wssc.user._id === _id &&
 			await deleteAvatar(_id)
@@ -309,7 +309,7 @@ export class UsersServer<AS extends AbilitiesSchema> {
 		
 		/* Orgs */
 		
-		this.wss.onRequest("users.orgs.add", async (wssc: WithUser<InSiteWebSocketServerClient, AS>, org: Omit<OrgDoc, "_id" | "createdAt" | "owners">) => {
+		this.wss.onRequest("users.orgs.add", async (wssc: WSSCWithUser<AS>, org: Omit<OrgDoc, "_id" | "createdAt" | "owners">) => {
 			if (wssc.user?.abilities.inSite?.sections?.includes("users")) {
 				if (!org.title)
 					throw new Err("Title can't be empty", "emptytitle");
@@ -319,7 +319,7 @@ export class UsersServer<AS extends AbilitiesSchema> {
 			
 		});
 		
-		this.wss.onRequest("users.orgs.update", async (wssc: WithUser<InSiteWebSocketServerClient, AS>, _id, updates: Omit<OrgDoc, "_id" | "createdAt">) => {
+		this.wss.onRequest("users.orgs.update", async (wssc: WSSCWithUser<AS>, _id, updates: Omit<OrgDoc, "_id" | "createdAt">) => {
 			if (wssc.user?.abilities.inSite?.sections?.includes("users") && wssc.user.slaveIds.includes(_id)) {
 				if (updates.title !== undefined && !updates.title)
 					throw new Err("Title can't be empty", "emptytitle");
@@ -346,7 +346,7 @@ export class UsersServer<AS extends AbilitiesSchema> {
 			
 		});
 		
-		this.wss.onRequest("users.orgs.delete", async (wssc: WithUser<InSiteWebSocketServerClient, AS>, _id: string) => {
+		this.wss.onRequest("users.orgs.delete", async (wssc: WSSCWithUser<AS>, _id: string) => {
 			if (wssc.user?.abilities.inSite?.sections?.includes("users") && wssc.user.slaveIds.includes(_id))
 				await this.users.orgs.collectionDelete(_id);
 			
@@ -355,7 +355,7 @@ export class UsersServer<AS extends AbilitiesSchema> {
 		
 		/* Roles */
 		
-		this.wss.onRequest("users.roles.check-id", (wssc: WithUser<InSiteWebSocketServerClient, AS>, _id: string) => {
+		this.wss.onRequest("users.roles.check-id", (wssc: WSSCWithUser<AS>, _id: string) => {
 			if (wssc.user?.abilities.inSite?.sections?.includes("users")) {
 				if (!regexps.role.test(_id))
 					throw new Err("Role ID is incorrect", "notroleid");
@@ -366,13 +366,13 @@ export class UsersServer<AS extends AbilitiesSchema> {
 			
 		});
 		
-		this.wss.onRequest("users.roles.add", async (wssc: WithUser<InSiteWebSocketServerClient, AS>, role: Omit<RoleDoc, "abilities" | "createdAt">) => {
+		this.wss.onRequest("users.roles.add", async (wssc: WSSCWithUser<AS>, role: Omit<RoleDoc, "abilities" | "createdAt">) => {
 			if (wssc.user?.abilities.inSite?.sections?.includes("users"))
 				await this.users.roles.new(role);
 			
 		});
 		
-		this.wss.onRequest("users.roles.update", async (wssc: WithUser<InSiteWebSocketServerClient, AS>, _id: string, { abilities, ...updates }: Omit<RoleDoc, "createdAt">) => {
+		this.wss.onRequest("users.roles.update", async (wssc: WSSCWithUser<AS>, _id: string, { abilities, ...updates }: Omit<RoleDoc, "createdAt">) => {
 			if (wssc.user?.abilities.inSite?.sections?.includes("users") && wssc.user.slaveRoleIds.includes(_id)) {
 				if (updates.involves)
 					if (includesAll(wssc.user.slaveRoleIds, updates.involves)) {
@@ -393,7 +393,7 @@ export class UsersServer<AS extends AbilitiesSchema> {
 			
 		});
 		
-		this.wss.onRequest("users.roles.set-ability", async (wssc: WithUser<InSiteWebSocketServerClient, AS>, _id: string, abilityId: StringKey<Abilities<AS>>, paramId: string, value: unknown) => {
+		this.wss.onRequest("users.roles.set-ability", async (wssc: WSSCWithUser<AS>, _id: string, abilityId: StringKey<Abilities<AS>>, paramId: string, value: unknown) => {
 			if (wssc.user?.abilities.inSite?.sections?.includes("users") && wssc.user.slaveRoleIds.includes(_id) && wssc.user.abilities[abilityId]) {
 				const role = this.users.roles.get(_id);
 				if (role) {
@@ -442,7 +442,7 @@ export class UsersServer<AS extends AbilitiesSchema> {
 			
 		});
 		
-		this.wss.on("client-message:users.roles.delete", async (wssc: WithUser<InSiteWebSocketServerClient, AS>, _id: string) => {
+		this.wss.on("client-message:users.roles.delete", async (wssc: WSSCWithUser<AS>, _id: string) => {
 			if (wssc.user?.abilities.inSite?.sections?.includes("users") && wssc.user.slaveRoleIds.includes(_id))
 				await this.users.roles.collectionDelete(_id);
 			
@@ -457,14 +457,14 @@ export class UsersServer<AS extends AbilitiesSchema> {
 		return this.initPromise;
 	}
 	
-	getDefaultSessionProps({ userAgent, remoteAddress }: WithUser<InSiteWebSocketServerClient, AS>) {
+	getDefaultSessionProps({ userAgent, remoteAddress }: WSSCWithUser<AS>) {
 		return {
 			userAgent,
 			remoteAddress
 		};
 	}
 	
-	setSession(wssc: WithUser<InSiteWebSocketServerClient, AS>, session: null | Session | string | undefined, shouldProlong?: boolean) {
+	setSession(wssc: WSSCWithUser<AS>, session: null | Session | string | undefined, shouldProlong?: boolean) {
 		if (session === null)
 			session = undefined;
 		else if (typeof session == "string")
@@ -498,7 +498,7 @@ export class UsersServer<AS extends AbilitiesSchema> {
 		
 	}
 	
-	private login = async (wssc: WithUser<InSiteWebSocketServerClient, AS>, email: string, password: string) => {
+	private login = async (wssc: WSSCWithUser<AS>, email: string, password: string) => {
 		const session = await this.users.login(email, password, {
 			...this.getDefaultSessionProps(wssc),
 			...this.getSessionProps?.(wssc),
@@ -510,7 +510,7 @@ export class UsersServer<AS extends AbilitiesSchema> {
 		
 	};
 	
-	private logout = (wssc: WithUser<InSiteWebSocketServerClient, AS>) => {
+	private logout = (wssc: WSSCWithUser<AS>) => {
 		if (wssc.session) {
 			this.users.logout(wssc.session);
 			this.setSession(wssc, null);
@@ -525,7 +525,7 @@ export class UsersServer<AS extends AbilitiesSchema> {
 		next && this.rolesPublication.skip(next);
 	
 	private handleUserCreate = (user: User) =>
-		this.userWsMap.set(user, new Set<WithUser<InSiteWebSocketServerClient, AS>>());
+		this.userWsMap.set(user, new Set<WSSCWithUser<AS>>());
 	
 	private handleUserIsOnline = ({ _id, isOnline }: User) => {
 		const updates = { _id, isOnline };
@@ -569,13 +569,13 @@ export class UsersServer<AS extends AbilitiesSchema> {
 		
 	};
 	
-	private handleClientRequestLogin = (wssc: WithUser<InSiteWebSocketServerClient, AS>, email: string, password: string) =>
+	private handleClientRequestLogin = (wssc: WSSCWithUser<AS>, email: string, password: string) =>
 		this.login(wssc, email, password);
 	
-	private handleClientRequestLogout = (wssc: WithUser<InSiteWebSocketServerClient, AS>) =>
+	private handleClientRequestLogout = (wssc: WSSCWithUser<AS>) =>
 		this.logout(wssc);
 	
-	private handleClientClosed = (wssc: WithUser<InSiteWebSocketServerClient, AS>) => {
+	private handleClientClosed = (wssc: WSSCWithUser<AS>) => {
 		wssc.session?.offline();
 		this.setSession(wssc, null);
 		
