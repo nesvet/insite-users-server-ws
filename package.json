@@ -24,9 +24,9 @@
   "author": "Eugene Nesvetaev <dev@nesvet.dev> (https://nesvet.dev/)",
   "license": "MIT",
   "dependencies": {
-    "@nesvet/n": "^1.1.1",
+    "@nesvet/n": "^1.1.3",
     "insite-db": "^2.0.1",
-    "insite-users-server": "^2.0.3",
+    "insite-users-server": "^2.0.4",
     "insite-subscriptions-server": "^2.0.4"
   },
   "devDependencies": {
@@ -34,8 +34,8 @@
     "@nesvet/eslint-config": "^2.0.24",
     "@types/node": "^22.1.0",
     "@types/ws": "^8.5.12",
-    "insite-ws": "^2.0.12",
-    "insite-ws-transfers": "^2.0.7",
+    "insite-ws": "^2.0.13",
+    "insite-ws-transfers": "^2.0.8",
     "typescript": "^5.5.4"
   }
 }
