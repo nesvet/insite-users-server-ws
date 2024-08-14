@@ -154,7 +154,7 @@ export class UsersServer<AS extends AbilitiesSchema> {
 		
 		/* Users */
 		
-		this.wss.onRequest("users.people.check-email", (wssc: WSSCWithUser<AS>, email: string) => {
+		this.wss.onRequest("users.people.check-email", (wssc, email: string) => {
 			if (wssc.user?.abilities.inSite?.sections?.includes("users")) {
 				if (!regexps.email.test(email))
 					throw new Err("Not email", "notemail");
@@ -165,7 +165,7 @@ export class UsersServer<AS extends AbilitiesSchema> {
 			
 		});
 		
-		this.wss.onRequest("users.people.add", async (wssc: WSSCWithUser<AS>, { roles, org, ...rest }: Omit<UserDoc, "_id" | "createdAt">) => {
+		this.wss.onRequest("users.people.add", async (wssc, { roles, org, ...rest }: Omit<UserDoc, "_id" | "createdAt">) => {
 			if (wssc.user?.abilities.inSite?.sections?.includes("users")) {
 				if (!roles.length)
 					throw new Err("Roles shouldn't be empty", "emptyroles");
@@ -181,7 +181,7 @@ export class UsersServer<AS extends AbilitiesSchema> {
 			
 		});
 		
-		this.wss.onRequest("users.people.change-password", async (wssc: WSSCWithUser<AS>, _id: string, newPassword: string) => {
+		this.wss.onRequest("users.people.change-password", async (wssc, _id: string, newPassword: string) => {
 			if (wssc.user?.abilities.inSite?.sections?.includes("users") && wssc.user.permissiveIds.includes(_id)) {
 				if (typeof newPassword != "string")
 					throw new Err("Type of password is incorrect", "wrongpasswordtype");
@@ -194,7 +194,7 @@ export class UsersServer<AS extends AbilitiesSchema> {
 			
 		});
 		
-		this.wss.onRequest("users.people.update", async (wssc: WSSCWithUser<AS>, _id: string, updates: Omit<UserDoc, "_id" | "createdAt">) => {
+		this.wss.onRequest("users.people.update", async (wssc, _id: string, updates: Omit<UserDoc, "_id" | "createdAt">) => {
 			if (wssc.user?.abilities.inSite?.sections?.includes("users") && wssc.user.permissiveIds.includes(_id)) {
 				if (updates.roles) {
 					if (!updates.roles.length)
@@ -223,7 +223,7 @@ export class UsersServer<AS extends AbilitiesSchema> {
 			
 		});
 		
-		this.wss.onRequest("users.people.delete", async (wssc: WSSCWithUser<AS>, _id: string) => {
+		this.wss.onRequest("users.people.delete", async (wssc, _id: string) => {
 			if (wssc.user?.abilities.inSite?.sections?.includes("users") && wssc.user.slaveIds.includes(_id))
 				await this.users.collection.deleteOne({ _id });
 			
@@ -232,7 +232,7 @@ export class UsersServer<AS extends AbilitiesSchema> {
 		
 		/* Sessions */
 		
-		this.wss.onRequest("users.people.destroy-session", async (wssc: WSSCWithUser<AS>, sessionId: string) => {
+		this.wss.onRequest("users.people.destroy-session", async (wssc, sessionId: string) => {
 			if (
 				wssc.user?.abilities.inSite?.sections?.includes("users") &&
 				wssc.user.permissiveIds.includes(this.users.bySessionId.get(sessionId)?._id)
@@ -294,13 +294,13 @@ export class UsersServer<AS extends AbilitiesSchema> {
 			
 		};
 		
-		this.wss.onRequest("users.people.delete-avatar", async (wssc: WSSCWithUser<AS>, _id: string) =>
+		this.wss.onRequest("users.people.delete-avatar", async (wssc, _id: string) =>
 			wssc.user?.abilities.inSite?.sections?.includes("users") &&
 			wssc.user.permissiveIds.includes(_id) &&
 			await deleteAvatar(_id)
 		);
 		
-		this.wss.onRequest("user.delete-avatar", async (wssc: WSSCWithUser<AS>, _id: string) =>
+		this.wss.onRequest("user.delete-avatar", async (wssc, _id: string) =>
 			wssc.user &&
 			wssc.user._id === _id &&
 			await deleteAvatar(_id)
@@ -309,7 +309,7 @@ export class UsersServer<AS extends AbilitiesSchema> {
 		
 		/* Orgs */
 		
-		this.wss.onRequest("users.orgs.add", async (wssc: WSSCWithUser<AS>, org: Omit<OrgDoc, "_id" | "createdAt" | "owners">) => {
+		this.wss.onRequest("users.orgs.add", async (wssc, org: Omit<OrgDoc, "_id" | "createdAt" | "owners">) => {
 			if (wssc.user?.abilities.inSite?.sections?.includes("users")) {
 				if (!org.title)
 					throw new Err("Title can't be empty", "emptytitle");
@@ -319,7 +319,7 @@ export class UsersServer<AS extends AbilitiesSchema> {
 			
 		});
 		
-		this.wss.onRequest("users.orgs.update", async (wssc: WSSCWithUser<AS>, _id, updates: Omit<OrgDoc, "_id" | "createdAt">) => {
+		this.wss.onRequest("users.orgs.update", async (wssc, _id, updates: Omit<OrgDoc, "_id" | "createdAt">) => {
 			if (wssc.user?.abilities.inSite?.sections?.includes("users") && wssc.user.slaveIds.includes(_id)) {
 				if (updates.title !== undefined && !updates.title)
 					throw new Err("Title can't be empty", "emptytitle");
@@ -346,7 +346,7 @@ export class UsersServer<AS extends AbilitiesSchema> {
 			
 		});
 		
-		this.wss.onRequest("users.orgs.delete", async (wssc: WSSCWithUser<AS>, _id: string) => {
+		this.wss.onRequest("users.orgs.delete", async (wssc, _id: string) => {
 			if (wssc.user?.abilities.inSite?.sections?.includes("users") && wssc.user.slaveIds.includes(_id))
 				await this.users.orgs.collectionDelete(_id);
 			
@@ -355,7 +355,7 @@ export class UsersServer<AS extends AbilitiesSchema> {
 		
 		/* Roles */
 		
-		this.wss.onRequest("users.roles.check-id", (wssc: WSSCWithUser<AS>, _id: string) => {
+		this.wss.onRequest("users.roles.check-id", (wssc, _id: string) => {
 			if (wssc.user?.abilities.inSite?.sections?.includes("users")) {
 				if (!regexps.role.test(_id))
 					throw new Err("Role ID is incorrect", "notroleid");
@@ -366,13 +366,13 @@ export class UsersServer<AS extends AbilitiesSchema> {
 			
 		});
 		
-		this.wss.onRequest("users.roles.add", async (wssc: WSSCWithUser<AS>, role: Omit<RoleDoc, "abilities" | "createdAt">) => {
+		this.wss.onRequest("users.roles.add", async (wssc, role: Omit<RoleDoc, "abilities" | "createdAt">) => {
 			if (wssc.user?.abilities.inSite?.sections?.includes("users"))
 				await this.users.roles.new(role);
 			
 		});
 		
-		this.wss.onRequest("users.roles.update", async (wssc: WSSCWithUser<AS>, _id: string, { abilities, ...updates }: Omit<RoleDoc, "createdAt">) => {
+		this.wss.onRequest("users.roles.update", async (wssc, _id: string, { abilities, ...updates }: Omit<RoleDoc, "createdAt">) => {
 			if (wssc.user?.abilities.inSite?.sections?.includes("users") && wssc.user.slaveRoleIds.includes(_id)) {
 				if (updates.involves)
 					if (includesAll(wssc.user.slaveRoleIds, updates.involves)) {
@@ -393,7 +393,7 @@ export class UsersServer<AS extends AbilitiesSchema> {
 			
 		});
 		
-		this.wss.onRequest("users.roles.set-ability", async (wssc: WSSCWithUser<AS>, _id: string, abilityId: StringKey<Abilities<AS>>, paramId: string, value: unknown) => {
+		this.wss.onRequest("users.roles.set-ability", async (wssc, _id: string, abilityId: StringKey<Abilities<AS>>, paramId: string, value: unknown) => {
 			if (wssc.user?.abilities.inSite?.sections?.includes("users") && wssc.user.slaveRoleIds.includes(_id) && wssc.user.abilities[abilityId]) {
 				const role = this.users.roles.get(_id);
 				if (role) {
@@ -464,7 +464,7 @@ export class UsersServer<AS extends AbilitiesSchema> {
 		};
 	}
 	
-	setSession(wssc: WSSCWithUser<AS>, session: null | Session | string | undefined, shouldProlong?: boolean) {
+	setSession(wssc: WSSCWithUser<AS>, session: null | Session<AS> | string | undefined, shouldProlong?: boolean) {
 		if (session === null)
 			session = undefined;
 		else if (typeof session == "string")
@@ -521,13 +521,13 @@ export class UsersServer<AS extends AbilitiesSchema> {
 	private handleRolesUpdate = () =>
 		this.rolesPublication.flushInitial();
 	
-	private handleRolesRoleUpdate = (role: Role, next: ChangeStreamDocument<RoleDoc>) =>
+	private handleRolesRoleUpdate = (role: Role<AS>, next: ChangeStreamDocument<RoleDoc>) =>
 		next && this.rolesPublication.skip(next);
 	
-	private handleUserCreate = (user: User) =>
+	private handleUserCreate = (user: User<AS>) =>
 		this.userWsMap.set(user, new Set<WSSCWithUser<AS>>());
 	
-	private handleUserIsOnline = ({ _id, isOnline }: User) => {
+	private handleUserIsOnline = ({ _id, isOnline }: User<AS>) => {
 		const updates = { _id, isOnline };
 		
 		for (const usersSubscription of this.usersPublication.subscriptions) {
@@ -538,7 +538,7 @@ export class UsersServer<AS extends AbilitiesSchema> {
 		
 	};
 	
-	private handleSessionDelete = (session: Session) => {
+	private handleSessionDelete = (session: Session<AS>) => {
 		const wssc = this.sessionsWsMap.get(session);
 		
 		if (wssc)
@@ -553,7 +553,7 @@ export class UsersServer<AS extends AbilitiesSchema> {
 		
 	};
 	
-	private handleOrgsOrgUpdate = (org: Org, next: ChangeStreamDocument<OrgDoc>) => {
+	private handleOrgsOrgUpdate = (org: Org<AS>, next: ChangeStreamDocument<OrgDoc>) => {
 		if (next) {
 			this.orgsPublication.skip(next);
 			this.orgsExtendedPublication.skip(next);
@@ -561,7 +561,7 @@ export class UsersServer<AS extends AbilitiesSchema> {
 		
 	};
 	
-	private handleUserPermissionsChange = (user: User) => {
+	private handleUserPermissionsChange = (user: User<AS>) => {
 		const webSockets = this.userWsMap.get(user);
 		
 		if (webSockets)
