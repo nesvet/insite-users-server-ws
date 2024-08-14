@@ -1,6 +1,6 @@
 {
   "name": "insite-users-server-ws",
-  "version": "2.0.4",
+  "version": "2.0.6",
   "description": "inSite users server side WebSocket API",
   "type": "module",
   "main": "./dist/index.js",
