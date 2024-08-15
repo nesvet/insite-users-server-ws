@@ -3,7 +3,6 @@
 .DS_Store
 *.log
 node_modules/
-bun.lockb
 .github/
 src/
 .conveyer.js
