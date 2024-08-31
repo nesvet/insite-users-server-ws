@@ -10,10 +10,9 @@ import {
 	union,
 	without
 } from "@nesvet/n";
+import type { Abilities, AbilitiesSchema } from "insite-common";
 import { Binary, type ChangeStreamDocument, InSiteCollections } from "insite-db";
 import {
-	type Abilities,
-	type AbilitiesSchema,
 	type AbilityParamItems,
 	type AbilityParamNumber,
 	type AbilityWithParams,

@@ -10,10 +10,10 @@ import {
 	intersection,
 	pick
 } from "@nesvet/n";
+import type { AbilitiesSchema } from "insite-common";
 import { ChangeStreamDocument, Sort } from "insite-db";
 import type {
 	AbilitiesMap,
-	AbilitiesSchema,
 	OrgDoc,
 	Orgs,
 	RoleDoc,
