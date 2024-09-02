@@ -477,6 +477,7 @@ export class UsersServer<AS extends AbilitiesSchema> {
 				wssc.session = session;
 				wssc.user = session.user;
 				wssc.lastUserId = session.user._id;
+				
 				this.userWsMap.get(session.user)?.add(wssc);
 				this.sessionsWsMap.set(session, wssc);
 				
@@ -489,6 +490,8 @@ export class UsersServer<AS extends AbilitiesSchema> {
 				
 			} else {
 				delete wssc.session;
+				delete wssc.user;
+				
 				this.userWsMap.get(wssc.user!)?.delete(wssc);
 			}
 			
