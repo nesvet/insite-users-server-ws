@@ -52,8 +52,8 @@ const maxAvatarSize = 1024 * 512;
 
 export type Options<AS extends AbilitiesSchema> = {
 	wss: InSiteWebSocketServer<WSSCWithUser<AS>>;
-	collections: InSiteCollections;
-	users: UsersOptions<AS>;
+	collections?: InSiteCollections;
+	users: Users<AS> | UsersOptions<AS>;
 	publication?: UsersPublicationOptions;
 	extendedPublication?: UsersExtendedPublicationOptions;
 	userPublication?: UserPublicationOptions;
@@ -97,7 +97,7 @@ export class UsersServer<AS extends AbilitiesSchema> {
 		const {
 			wss,
 			collections,
-			users: usersOptions,
+			users,
 			publication: publicationOptions,
 			extendedPublication: extendedPublicationOptions,
 			userPublication: userPublicationOptions,
@@ -117,7 +117,7 @@ export class UsersServer<AS extends AbilitiesSchema> {
 		} = orgsOptions;
 		
 		this.wss = wss;
-		this.users = await Users.init(collections, usersOptions);
+		this.users = users instanceof Users ? users : await Users.init(collections!, users);
 		this.getSessionProps = getSessionProps;
 		this.incomingTransport = incomingTransport;
 		
