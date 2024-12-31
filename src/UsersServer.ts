@@ -470,7 +470,7 @@ export class UsersServer<AS extends AbilitiesSchema> {
 			if (wssc.session)
 				this.#sessionsWsMap.delete(wssc.session);
 			
-			if (session) {
+			if (session && !wssc.isRejected) {
 				wssc.session = session;
 				wssc.user = session.user;
 				wssc.lastUserId = session.user._id;
@@ -494,6 +494,12 @@ export class UsersServer<AS extends AbilitiesSchema> {
 	}
 	
 	#login = async (wssc: WSSCWithUser<AS>, email: string, password: string) => {
+		if (!wssc.isRejected) {
+			const session = await this.users.login(email, password, this.#makeSessionProps(wssc));
+			
+			if (session)
+				this.setSession(wssc, session);
+		}
 		
 	};
 	
