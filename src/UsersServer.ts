@@ -303,6 +303,9 @@ export class UsersServer<AS extends AbilitiesSchema> {
 		
 		/* Orgs */
 		
+		// TODO: Ensure that user becoming an owner of the org created
+		// Otherwise, after org creation, he must have no rights to it, right?
+		
 		this.wss.onRequest("users.orgs.add", async (wssc, org: Omit<OrgDoc, "_id" | "createdAt" | "owners">) => {
 			if (wssc.user?.abilities.inSite?.sections?.includes("users")) {
 				if (!org.title)
