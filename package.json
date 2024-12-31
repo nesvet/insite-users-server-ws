@@ -5,7 +5,7 @@
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
-  "packageManager": "bun@1.1.33",
+  "packageManager": "bun@1.1.36",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "bun .conveyer.js",
@@ -27,16 +27,16 @@
     "@nesvet/n": "^1.1.7",
     "insite-common": "^2.0.0",
     "insite-db": "^2.0.3",
-    "insite-subscriptions-server": "^2.0.12",
-    "insite-users-server": "^2.0.79",
-    "insite-ws": "^2.0.17",
-    "insite-ws-transfers": "^2.0.10"
+    "insite-subscriptions-server": "^2.0.19",
+    "insite-users-server": "^2.0.99",
+    "insite-ws": "^2.0.18",
+    "insite-ws-transfers": "^2.0.16"
   },
   "devDependencies": {
     "@nesvet/conveyer": "^2.2.5",
     "@nesvet/eslint-config": "^2.0.34",
-    "@types/node": "^22.8.4",
-    "@types/ws": "^8.5.12",
-    "typescript": "^5.6.3"
+    "@types/node": "^22.10.2",
+    "@types/ws": "^8.5.13",
+    "typescript": "^5.7.2"
   }
 }
