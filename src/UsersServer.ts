@@ -22,7 +22,6 @@ import {
 	type Role,
 	type RoleDoc,
 	type Session,
-	type SessionDoc,
 	type User,
 	type UserDoc,
 	Users,
@@ -64,8 +63,7 @@ export type Options<AS extends AbilitiesSchema> = {
 		publication?: OrgsPublicationOptions;
 		extendedPublication?: OrgsExtendedPublicationOptions;
 	};
-	getSessionProps?: (wssc: WSSCWithUser<AS>) => Partial<SessionDoc>;
-	incomingTransport?: IncomingTransport;
+	incomingTransport?: IncomingTransport<WSSCWithUser<AS>>;
 };
 
 
@@ -241,15 +239,15 @@ export class UsersServer<AS extends AbilitiesSchema> {
 		/* Avatars */
 		
 		if (this.incomingTransport) {
-			const getAvatarTransferProps = (check?: (wssc: WSSCWithUser<AS>, transfer: IncomingTransfer) => boolean | Promise<boolean | undefined> | undefined) => ({
+			const getAvatarTransferProps = (check?: (wssc: WSSCWithUser<AS>, transfer: IncomingTransfer<WSSCWithUser<AS>>) => boolean | Promise<boolean | undefined> | undefined) => ({
 				
-				begin: async (wssc: WSSCWithUser<AS>, transfer: IncomingTransfer) => (
+				begin: async (wssc: WSSCWithUser<AS>, transfer: IncomingTransfer<WSSCWithUser<AS>>) => (
 					(!check || await check(wssc, transfer)) &&
 					avatarTypesAccepted.includes(transfer.metadata.type as string) &&
 					transfer.size <= maxAvatarSize
 				),
 				
-				end: async (wssc: WSSCWithUser<AS>, { data, metadata: { type, _id } }: IncomingTransfer) => {
+				end: async (wssc: WSSCWithUser<AS>, { data, metadata: { type, _id } }: IncomingTransfer<WSSCWithUser<AS>>) => {
 					const binaryData = Binary.createFromBase64((data as string).slice((data as string).indexOf(",")));
 					
 					const ts = Date.now().toString(36);
@@ -269,13 +267,13 @@ export class UsersServer<AS extends AbilitiesSchema> {
 			});
 			
 			this.incomingTransport.on("users.people.avatar", getAvatarTransferProps(
-				(wssc: WSSCWithUser<AS>, { metadata: { _id } }: IncomingTransfer) =>
+				(wssc, { metadata: { _id } }) =>
 					wssc.user?.abilities.inSite?.sections?.includes("users") &&
 					wssc.user.permissiveIds.includes(_id as string)
 			));
 			
 			this.incomingTransport.on("user.avatar", getAvatarTransferProps(
-				(wssc: WSSCWithUser<AS>, transfer: IncomingTransfer) =>
+				(wssc, transfer) =>
 					wssc.user &&
 					wssc.user._id === transfer.metadata._id
 			));
