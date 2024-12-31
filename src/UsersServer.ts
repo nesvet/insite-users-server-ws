@@ -80,7 +80,6 @@ export class UsersServer<AS extends AbilitiesSchema> {
 	
 	wss!: Options<AS>["wss"];
 	users!: Users<AS>;
-	getSessionProps!: Options<AS>["getSessionProps"];
 	incomingTransport!: Options<AS>["incomingTransport"];
 	
 	abilitiesPublication!: AbilitiesPublication<AS>;
@@ -103,7 +102,6 @@ export class UsersServer<AS extends AbilitiesSchema> {
 			userPublication: userPublicationOptions,
 			roles: rolesOptions = {},
 			orgs: orgsOptions = {},
-			getSessionProps,
 			incomingTransport
 		} = options;
 		
@@ -118,7 +116,6 @@ export class UsersServer<AS extends AbilitiesSchema> {
 		
 		this.wss = wss;
 		this.users = users instanceof Users ? users : await Users.init(collections!, users);
-		this.getSessionProps = getSessionProps;
 		this.incomingTransport = incomingTransport;
 		
 		for (const user of this.users.values())
@@ -450,16 +447,18 @@ export class UsersServer<AS extends AbilitiesSchema> {
 		return this;
 	};
 	
-	private initPromise;
+	#initPromise;
 	
 	whenReady() {
-		return this.initPromise;
+		return this.#initPromise;
 	}
 	
-	getDefaultSessionProps({ userAgent, remoteAddress }: WSSCWithUser<AS>) {
+	#makeSessionProps({ userAgent, remoteAddress, sessionProps }: WSSCWithUser<AS>) {
 		return {
 			userAgent,
-			remoteAddress
+			remoteAddress,
+			...sessionProps,
+			isOnline: true
 		};
 	}
 	
@@ -482,11 +481,7 @@ export class UsersServer<AS extends AbilitiesSchema> {
 				this.#sessionsWsMap.set(session, wssc);
 				
 				if (shouldProlong)
-					session.prolong({
-						...this.getDefaultSessionProps(wssc),
-						...this.getSessionProps?.(wssc),
-						isOnline: true
-					});
+					session.prolong(this.#makeSessionProps(wssc));
 				
 			} else {
 				delete wssc.session;
