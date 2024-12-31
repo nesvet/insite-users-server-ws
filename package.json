@@ -27,8 +27,8 @@
     "@nesvet/n": "^1.1.7",
     "insite-common": "^2.0.0",
     "insite-db": "^2.0.3",
-    "insite-subscriptions-server": "^2.0.19",
-    "insite-users-server": "^2.0.99",
+    "insite-subscriptions-server": "^2.0.20",
+    "insite-users-server": "^2.0.100",
     "insite-ws": "^2.0.18",
     "insite-ws-transfers": "^2.0.16"
   },
