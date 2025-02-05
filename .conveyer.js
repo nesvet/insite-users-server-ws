@@ -12,6 +12,7 @@ new Conveyer([
 		entryPoints: [ "src/index.ts" ],
 		outfile: path.resolve(distDir, "index.js"),
 		external: [ true, "insite-*" ],
+		local: "insite-common",
 		platform: "node",
 		format: "esm",
 		sourcemap: true,
