@@ -1,10 +1,4 @@
 import {
-	CollectionMapPublication,
-	Projection,
-	Publication,
-	SubscriptionHandle
-} from "insite-subscriptions-server/ws";
-import {
 	_ids,
 	includesAny,
 	intersection,
@@ -12,6 +6,12 @@ import {
 } from "@nesvet/n";
 import type { AbilitiesSchema } from "insite-common";
 import { ChangeStreamDocument, Sort } from "insite-db";
+import {
+	CollectionMapPublication,
+	Projection,
+	Publication,
+	SubscriptionHandle
+} from "insite-subscriptions-server/ws";
 import type {
 	AbilitiesMap,
 	OrgDoc,
@@ -26,12 +26,12 @@ import type {
 
 
 export class AbilitiesPublication<AS extends AbilitiesSchema> extends Publication<AS> {
-	constructor(abilitiesMap: AbilitiesMap<AS>) {
+	constructor(abilities: AbilitiesMap<AS>) {
 		super("abilities", {
 			
-			fetch(wssc) {
-				if (wssc.user?.abilities.inSite?.sections?.includes("users"))
-					return { abilities: abilitiesMap.getSchemeFor(wssc.user) };
+			fetch({ user }) {
+				if (user?.abilities.inSite?.users?.roles)
+					return { abilities: abilities.getSchemeFor(user.abilities) };
 				
 				return null;
 			}
@@ -58,8 +58,8 @@ export class RolesPublication<AS extends AbilitiesSchema> extends CollectionMapP
 		
 		Object.assign(projection, { involves: 1, abilities: 1 });
 		
-		super(roles.collection, "roles", wssc => wssc.user?.abilities.inSite?.sections?.includes("users") && {
-			query: { _id: { $in: wssc.user.slaveRoleIds } },
+		super(roles.collection, "roles", ({ user }) => user?.abilities.inSite?.users && {
+			query: { _id: { $in: user.slaveRoleIds } },
 			projection,
 			sort
 		}, roleDoc => {
@@ -258,8 +258,8 @@ export class UsersExtendedPublication<AS extends AbilitiesSchema> extends Collec
 		if (!triggers.includes("roles"))
 			triggers.push("roles");
 		
-		super(users.collection, "users.extended", wssc => wssc.user?.abilities.inSite?.sections?.includes("users") && {
-			query: { _id: { $in: wssc.user.slaveIds } },
+		super(users.collection, "users.extended", ({ user }) => user?.abilities.inSite?.users && {
+			query: { _id: { $in: user.slaveIds } },
 			projection,
 			sort,
 			triggers
@@ -280,8 +280,8 @@ export class UsersExtendedPublication<AS extends AbilitiesSchema> extends Collec
 
 export class SessionsPublication<AS extends AbilitiesSchema> extends CollectionMapPublication<AS, SessionDoc, [ userId: string ]> {
 	constructor(sessions: Sessions<AS>) {
-		super(sessions.collection, "users.people.sessions", (wssc, userId) =>
-			wssc.user?.abilities.inSite?.sections?.includes("users") && wssc.user.permissiveIds.includes(userId) && {
+		super(sessions.collection, "users.people.sessions", ({ user }, userId) =>
+			user?.abilities.inSite?.users && user.permissiveIds.includes(userId) && {
 				query: { user: userId },
 				projection: { remoteAddress: 1, isOnline: 1, prolongedAt: 1 },
 				sort: { prolongedAt: -1 }
@@ -298,7 +298,7 @@ export type OrgsPublicationOptions = {
 };
 
 export class OrgsPublication<AS extends AbilitiesSchema> extends CollectionMapPublication<AS, OrgDoc> {
-	constructor(orgs: Orgs, options: OrgsPublicationOptions = {}) {
+	constructor(orgs: Orgs<AS>, options: OrgsPublicationOptions = {}) {
 		
 		const {
 			projection = { title: 1 },
@@ -344,19 +344,19 @@ export class OrgsExtendedPublication<AS extends AbilitiesSchema> extends Collect
 		if (!triggers.includes("owners"))
 			triggers.push("owners");
 		
-		super(orgs.collection, "orgs.extended", wssc => wssc.user?.abilities.inSite?.sections?.includes("users") && {
-			query: { _id: { $in: wssc.user.slaveIds } },
+		super(orgs.collection, "orgs.extended", ({ user }) => user?.abilities.inSite?.users && {
+			query: { _id: { $in: user.slaveIds } },
 			projection,
 			sort,
 			triggers
-		}, (orgDoc, [ wssc ]) => {
+		}, (orgDoc, [ { user } ]) => {
 			const org = orgs.get(orgDoc._id)!;
 			
 			const { ownerIds, slaveOrgs, _o } = org;
 			
 			Object.assign(orgDoc, {
-				owners: intersection(ownerIds, wssc.user!.slaveIds),
-				slaveOrgs: _ids(intersection(slaveOrgs, wssc.user!.slaveOrgs)),
+				owners: intersection(ownerIds, user!.slaveIds),
+				slaveOrgs: _ids(intersection(slaveOrgs, user!.slaveOrgs)),
 				_o
 			});
 			
