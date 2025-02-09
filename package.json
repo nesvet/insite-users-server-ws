@@ -26,15 +26,15 @@
   "dependencies": {
     "@nesvet/n": "^1.1.22",
     "insite-common": "^2.1.0",
-    "insite-db": "^2.0.4",
-    "insite-subscriptions-server": "^2.0.21",
-    "insite-users-server": "^2.0.101",
-    "insite-ws": "^2.0.20",
-    "insite-ws-transfers": "^2.0.17"
+    "insite-db": "^2.1.0",
+    "insite-subscriptions-server": "^2.1.0",
+    "insite-users-server": "^2.1.0",
+    "insite-ws": "^2.1.0",
+    "insite-ws-transfers": "^2.1.0"
   },
   "devDependencies": {
     "@nesvet/conveyer": "^2.4.2",
-    "@nesvet/eslint-config": "^2.0.46",
+    "@nesvet/eslint-config": "^2.0.47",
     "@types/node": "^22.13.1",
     "@types/ws": "^8.5.14",
     "typescript": "^5.7.3"
