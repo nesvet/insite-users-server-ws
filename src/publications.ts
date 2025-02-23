@@ -137,7 +137,7 @@ export class UserPublication<AS extends AbilitiesSchema> extends Publication<AS>
 						
 					};
 					
-					users.collection.changeListeners.add(changeListener);
+					users.collection.onChange(changeListener);
 					
 					userSubscriptionChangeListenerMap.set(subscription, changeListener);
 				}
@@ -183,7 +183,7 @@ export class UserPublication<AS extends AbilitiesSchema> extends Publication<AS>
 				const changeListener = userSubscriptionChangeListenerMap.get(subscription);
 				
 				if (changeListener)
-					users.collection.changeListeners.delete(changeListener);
+					users.collection.removeChangeListener(changeListener);
 				
 			}
 			
