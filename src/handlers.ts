@@ -167,7 +167,7 @@ export function setupHandlers<AS extends AbilitiesSchema>({ wss, users }: UsersS
 		if (!org.title)
 			throw new Err("Title can't be empty", "title.empty");
 		
-		await orgs.create(org, user._id);
+		await orgs.create({ ...org, owners: [ user._id ] });
 		
 	});
 	
