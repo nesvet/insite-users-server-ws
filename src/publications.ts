@@ -20,6 +20,7 @@ import type {
 	Roles,
 	SessionDoc,
 	Sessions,
+	User,
 	UserDoc,
 	Users
 } from "insite-users-server";
@@ -91,6 +92,7 @@ export type UserPublicationOptions = {
 	fieldsToUpdate?: string[];
 	projection?: Projection;
 	transform?: (userDoc: object) => void;
+	public?: boolean;
 };
 
 export class UserPublication<AS extends AbilitiesSchema> extends Publication<AS> {
@@ -99,7 +101,8 @@ export class UserPublication<AS extends AbilitiesSchema> extends Publication<AS>
 		const {
 			fieldsToUpdate = [],
 			projection,
-			transform
+			transform,
+			public: isPublic
 		} = options;
 		
 		for (const key of [
@@ -114,6 +117,20 @@ export class UserPublication<AS extends AbilitiesSchema> extends Publication<AS>
 		] as const)
 			if (!projection || projection[key] !== 0)
 				fieldsToUpdate.push(key);
+		
+		const fieldsToPick: (keyof User<AS>)[] = [
+			"_id",
+			"email",
+			"name",
+			"initials",
+			"displayLabel",
+			"job",
+			"avatarUrl",
+			"abilities"
+		];
+		
+		if (!isPublic)
+			fieldsToPick.push("slaveIds");
 		
 		super("user", {
 			
@@ -146,23 +163,14 @@ export class UserPublication<AS extends AbilitiesSchema> extends Publication<AS>
 			
 			fetch({ user, session }, isSessionIdRequired) {
 				if (user) {
-					const userDoc = pick(user, [
-						"_id",
-						"email",
-						"name",
-						"initials",
-						"displayLabel",
-						"job",
-						"avatarUrl",
-						"abilities",
-						"slaveIds"
-					]);
+					const userDoc = pick(user, fieldsToPick);
 					
-					Object.assign(userDoc, {
-						orgId: user.org._id,
-						sessionId: isSessionIdRequired ? session?._id : undefined,
-						isOnline: true
-					});
+					if (!isPublic)
+						Object.assign(userDoc, {
+							orgId: user.org._id,
+							sessionId: isSessionIdRequired ? session?._id : undefined,
+							isOnline: true
+						});
 					
 					if (projection)
 						for (const key in projection)

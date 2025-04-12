@@ -1,3 +1,3 @@
-export type { Options } from "./types";
+export type { Options, UsersServerWithActualProps } from "./types";
 export * from "./UsersServer";
 export * from "./WSSCWithUser";

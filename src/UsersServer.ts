@@ -20,7 +20,7 @@ import {
 	UsersExtendedPublication,
 	UsersPublication
 } from "./publications";
-import type { Options } from "./types";
+import type { OmitRedundant, Options } from "./types";
 import type { WSSCWithUser } from "./WSSCWithUser";
 
 
@@ -52,6 +52,7 @@ export class UsersServer<AS extends AbilitiesSchema> {
 			wss,
 			collections,
 			users,
+			public: isPublic,
 			publication: publicationOptions,
 			extendedPublication: extendedPublicationOptions,
 			userPublication: userPublicationOptions,
@@ -76,29 +77,36 @@ export class UsersServer<AS extends AbilitiesSchema> {
 		for (const user of this.users.values())
 			this.#handleUserCreate(user);
 		
-		this.abilitiesPublication = new AbilitiesPublication<AS>(this.users.abilities);
-		this.rolesPublication = new RolesPublication<AS>(this.users.roles, rolesPublicationOptions);
-		this.usersPublication = new UsersPublication<AS>(this.users, publicationOptions);
-		this.usersExtendedPublication = new UsersExtendedPublication<AS>(this.users, extendedPublicationOptions);
-		this.userPublication = new UserPublication<AS>(this.users, userPublicationOptions);
-		this.orgsPublication = new OrgsPublication<AS>(this.users.orgs, orgsPublicationOptions);
-		this.orgsExtendedPublication = new OrgsExtendedPublication<AS>(this.users.orgs, orgsExtendedPublicationOptions);
-		this.sessionsPublication = new SessionsPublication<AS>(this.users.sessions);
+		if (!isPublic) {
+			this.abilitiesPublication = new AbilitiesPublication<AS>(this.users.abilities);
+			this.rolesPublication = new RolesPublication<AS>(this.users.roles, rolesPublicationOptions);
+			this.usersPublication = new UsersPublication<AS>(this.users, publicationOptions);
+			this.usersExtendedPublication = new UsersExtendedPublication<AS>(this.users, extendedPublicationOptions);
+			this.orgsPublication = new OrgsPublication<AS>(this.users.orgs, orgsPublicationOptions);
+			this.orgsExtendedPublication = new OrgsExtendedPublication<AS>(this.users.orgs, orgsExtendedPublicationOptions);
+			this.sessionsPublication = new SessionsPublication<AS>(this.users.sessions);
+			
+			this.users.on("roles-update", this.#handleRolesUpdate);
+			this.users.on("roles-role-update", this.#handleRolesRoleUpdate);
+			this.users.on("user-is-online", this.#handleUserIsOnline);
+			this.users.on("orgs-update", this.#handleOrgsUpdate);
+			this.users.on("orgs-org-update", this.#handleOrgsOrgUpdate);
+			
+			setupHandlers<AS>(this);
+		}
 		
-		this.users.on("roles-update", this.#handleRolesUpdate);
-		this.users.on("roles-role-update", this.#handleRolesRoleUpdate);
+		this.userPublication = new UserPublication<AS>(this.users, {
+			public: isPublic,
+			...userPublicationOptions
+		});
+		
 		this.users.on("user-create", this.#handleUserCreate);
-		this.users.on("user-is-online", this.#handleUserIsOnline);
 		this.users.on("session-delete", this.#handleSessionDelete);
-		this.users.on("orgs-update", this.#handleOrgsUpdate);
-		this.users.on("orgs-org-update", this.#handleOrgsOrgUpdate);
 		this.users.on("user-permissions-change", this.#handleUserPermissionsChange);
 		
 		this.wss.onRequest("login", this.#handleClientRequestLogin);
 		this.wss.onRequest("logout", this.#handleClientRequestLogout);
 		this.wss.on("client-closed", this.#handleClientClosed);
-		
-		setupHandlers<AS>(this);
 		
 		return this;
 	};
@@ -151,24 +159,6 @@ export class UsersServer<AS extends AbilitiesSchema> {
 		
 	}
 	
-	#login = async (wssc: WSSCWithUser<AS>, email: string, password: string) => {
-		if (!wssc.isRejected) {
-			const session = await this.users.login(email, password, this.#makeSessionProps(wssc));
-			
-			if (session)
-				this.setSession(wssc, session);
-		}
-		
-	};
-	
-	#logout = (wssc: WSSCWithUser<AS>) => {
-		if (wssc.session) {
-			this.users.logout(wssc.session);
-			this.setSession(wssc, null);
-		}
-		
-	};
-	
 	#handleRolesUpdate = () =>
 		this.rolesPublication.flushInitial();
 	
@@ -197,12 +187,11 @@ export class UsersServer<AS extends AbilitiesSchema> {
 		
 	};
 	
-	#handleOrgsUpdate = () => {
-		
-		this.orgsPublication.flushInitial();
-		this.orgsExtendedPublication.flushInitial();
-		
-	};
+	#handleOrgsUpdate = () =>
+		Promise.all([
+			this.orgsPublication.flushInitial(),
+			this.orgsExtendedPublication.flushInitial()
+		]);
 	
 	#handleOrgsOrgUpdate = (org: Org<AS>, next: ChangeStreamDocument<OrgDoc>) => {
 		if (next) {
@@ -220,21 +209,34 @@ export class UsersServer<AS extends AbilitiesSchema> {
 		
 	};
 	
-	#handleClientRequestLogin = (wssc: WSSCWithUser<AS>, email: string, password: string) =>
-		this.#login(wssc, email, password);
+	#handleClientRequestLogin = async (wssc: WSSCWithUser<AS>, email: string, password: string) => {
+		if (!wssc.isRejected) {
+			const session = await this.users.login(email, password, this.#makeSessionProps(wssc));
+			
+			if (session)
+				this.setSession(wssc, session);
+		}
+		
+	};
 	
-	#handleClientRequestLogout = (wssc: WSSCWithUser<AS>) =>
-		this.#logout(wssc);
+	#handleClientRequestLogout = async (wssc: WSSCWithUser<AS>) => {
+		if (wssc.session) {
+			await this.users.logout(wssc.session);
+			
+			this.setSession(wssc, null);
+		}
+		
+	};
 	
-	#handleClientClosed = (wssc: WSSCWithUser<AS>) => {
-		wssc.session?.offline();
+	#handleClientClosed = async (wssc: WSSCWithUser<AS>) => {
+		await wssc.session?.offline();
 		this.setSession(wssc, null);
 		
 	};
 	
 	
-	static init<IAS extends AbilitiesSchema>(options: Options<IAS>) {
-		const usersServer = new UsersServer(options);
+	static init<IAS extends AbilitiesSchema, IO extends Options<IAS>, IUS extends UsersServer<IAS>>(options: IO): Promise<OmitRedundant<IUS, IO>> {
+		const usersServer = new UsersServer(options) as IUS;
 		
 		return usersServer.whenReady();
 	}
