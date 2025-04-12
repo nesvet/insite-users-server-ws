@@ -132,10 +132,10 @@ export function setupHandlers<AS extends AbilitiesSchema>({ wss, users }: UsersS
 				throw new SubordinationError("permissiveIds", _id as string);
 			
 			if (!avatars.TYPES_ACCEPTED.includes(type as string))
-				throw new Err(`Unacceptable avatar format: ${type}`, "avatar.unacceptable-format");
+				throw new Err(`Unacceptable avatar format: ${type as string}`, "avatar.unacceptable-format");
 			
 			if (size as number > avatars.MAX_SIZE)
-				throw new Err(`Avatar size exceeds limit of ${avatars.MAX_SIZE}: ${size}`, "avatar.size-exceeds-limit");
+				throw new Err(`Avatar size exceeds limit of ${avatars.MAX_SIZE}: ${size as number}`, "avatar.size-exceeds-limit");
 			
 		},
 		

@@ -1,13 +1,13 @@
 import type { AbilitiesSchema } from "insite-common";
 import type { ChangeStreamDocument } from "insite-db";
 import {
+	Users,
 	type Org,
 	type OrgDoc,
 	type Role,
 	type RoleDoc,
 	type Session,
-	type User,
-	Users
+	type User
 } from "insite-users-server";
 import { setupHandlers } from "./handlers";
 import {
@@ -118,7 +118,7 @@ export class UsersServer<AS extends AbilitiesSchema> {
 		};
 	}
 	
-	setSession(wssc: WSSCWithUser<AS>, session: null | Session<AS> | string | undefined, shouldProlong?: boolean) {
+	setSession(wssc: WSSCWithUser<AS>, session: Session<AS> | string | null | undefined, shouldProlong?: boolean) {
 		if (session === null)
 			session = undefined;
 		else if (typeof session == "string")
@@ -137,7 +137,7 @@ export class UsersServer<AS extends AbilitiesSchema> {
 				this.#sessionsWsMap.set(session, wssc);
 				
 				if (shouldProlong)
-					session.prolong(this.#makeSessionProps(wssc));
+					void session.prolong(this.#makeSessionProps(wssc));
 				
 			} else {
 				delete wssc.session;

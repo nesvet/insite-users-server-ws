@@ -1,6 +1,6 @@
 import type { AbilitiesSchema } from "insite-common";
 import type { Collections } from "insite-db";
-import type { Users, Options as UsersOptions } from "insite-users-server";
+import type { Options as UsersOptions, Users } from "insite-users-server";
 import type { IncomingTransport, WithOptionalOnTransfer } from "insite-ws-transfers/node";
 import type { WSServer } from "insite-ws/server";
 import type {

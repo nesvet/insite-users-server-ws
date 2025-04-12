@@ -132,7 +132,7 @@ export class UserPublication<AS extends AbilitiesSchema> extends Publication<AS>
 								
 								case "replace":// eslint-disable-line no-fallthrough
 								case "delete":
-									subscription.changed(next);
+									void subscription.changed(next);
 							}
 						
 					};
