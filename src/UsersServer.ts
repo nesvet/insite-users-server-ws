@@ -1,14 +1,5 @@
 import type { AbilitiesSchema } from "insite-common";
-import type { ChangeStreamDocument } from "insite-db";
-import {
-	Users,
-	type Org,
-	type OrgDoc,
-	type Role,
-	type RoleDoc,
-	type Session,
-	type User
-} from "insite-users-server";
+import { Users, type Session, type User } from "insite-users-server";
 import { setupHandlers } from "./handlers";
 import {
 	AbilitiesPublication,
@@ -86,11 +77,7 @@ export class UsersServer<AS extends AbilitiesSchema> {
 			this.orgsExtendedPublication = new OrgsExtendedPublication<AS>(this.users.orgs, orgsExtendedPublicationOptions);
 			this.sessionsPublication = new SessionsPublication<AS>(this.users.sessions);
 			
-			this.users.on("roles-update", this.#handleRolesUpdate);
-			this.users.on("roles-role-update", this.#handleRolesRoleUpdate);
 			this.users.on("user-is-online", this.#handleUserIsOnline);
-			this.users.on("orgs-update", this.#handleOrgsUpdate);
-			this.users.on("orgs-org-update", this.#handleOrgsOrgUpdate);
 			
 			setupHandlers<AS>(this);
 		}
@@ -159,12 +146,6 @@ export class UsersServer<AS extends AbilitiesSchema> {
 		
 	}
 	
-	#handleRolesUpdate = () =>
-		this.rolesPublication.flushInitial();
-	
-	#handleRolesRoleUpdate = (role: Role<AS>, next: ChangeStreamDocument<RoleDoc>) =>
-		next && this.rolesPublication.skip(next);
-	
 	#handleUserCreate = (user: User<AS>) =>
 		this.#userWsMap.set(user, new Set<WSSCWithUser<AS>>());
 	
@@ -184,20 +165,6 @@ export class UsersServer<AS extends AbilitiesSchema> {
 		
 		if (wssc)
 			this.setSession(wssc, null);
-		
-	};
-	
-	#handleOrgsUpdate = () =>
-		Promise.all([
-			this.orgsPublication.flushInitial(),
-			this.orgsExtendedPublication.flushInitial()
-		]);
-	
-	#handleOrgsOrgUpdate = (org: Org<AS>, next: ChangeStreamDocument<OrgDoc>) => {
-		if (next) {
-			this.orgsPublication.skip(next);
-			this.orgsExtendedPublication.skip(next);
-		}
 		
 	};
 	
