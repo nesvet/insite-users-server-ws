@@ -93,7 +93,7 @@ export class UsersServer<AS extends AbilitiesSchema> {
 		
 		this.wss.onRequest("login", this.#handleClientRequestLogin);
 		this.wss.onRequest("logout", this.#handleClientRequestLogout);
-		this.wss.on("client-closed", this.#handleClientClosed);
+		this.wss.on("client-close", this.#handleClientClosed);
 		
 		return this;
 	};
